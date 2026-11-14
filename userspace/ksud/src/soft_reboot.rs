@@ -161,7 +161,7 @@ pub fn soft_reboot() -> Result<()> {
         Ok(())
     })?;
 
-    info!("emulating soft_reboot!");
+    info!("emulating soft_reboot! {}", crate::init_event::caller_desc());
     if let Err(e) = reset_boot_completed() {
         warn!("reset boot completed failed: {e}");
     }

@@ -275,7 +275,7 @@ impl Drop for SigchldBlock {
 }
 
 pub fn exec_script<T: AsRef<Path>>(path: T, wait: ScriptWait) -> Result<()> {
-    info!("exec {}", path.as_ref().display());
+    info!("exec {} (launcher pid={})", path.as_ref().display(), std::process::id());
 
     let is_module_script = path.as_ref().starts_with(defs::MODULE_DIR);
     // Extract module_id from path if it matches /data/adb/modules/{id}/...

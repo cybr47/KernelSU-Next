@@ -128,6 +128,7 @@ pub fn run(package_name: &String, kmi: Option<String>, allow_shell: bool) -> Res
     init_event::run_stage("post-mount", wait);
 
     // 12. Execute service stage scripts (non-blocking)
+    info!("late-load launches service scripts directly (no EVENT_SERVICES claim): {}", init_event::caller_desc());
     init_event::run_stage("service", ScriptWait::NoWait);
 
     // 13. Execute boot-completed stage scripts (non-blocking)

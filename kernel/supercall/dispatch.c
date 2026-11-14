@@ -100,6 +100,9 @@ static int do_get_info_legacy(void __user *arg)
 static int do_report_event(void __user *arg)
 {
     static bool services_started = false;
+    // DIAG: who last reset / claimed the service stage
+    static pid_t services_reset_pid, services_claim_pid;
+    static char services_reset_comm[TASK_COMM_LEN], services_claim_comm[TASK_COMM_LEN];
     struct ksu_report_event_cmd cmd;
 
     if (copy_from_user(&cmd, arg, sizeof(cmd))) {
@@ -111,7 +114,12 @@ static int do_report_event(void __user *arg)
         static bool post_fs_data_lock = false;
 
         // Reset for emulated soft reboot
+        pr_info("DIAG post-fs-data: caller=%d(%s) ppid=%d services_started %d->0 (claimed by %d(%s), last reset by %d(%s))\n",
+                task_tgid_nr(current), current->comm, task_ppid_nr(current), services_started,
+                services_claim_pid, services_claim_comm, services_reset_pid, services_reset_comm);
         services_started = false;
+        services_reset_pid = task_tgid_nr(current);
+        strscpy(services_reset_comm, current->comm, sizeof(services_reset_comm));
         if (!post_fs_data_lock) {
             post_fs_data_lock = true;
             if (ksu_late_loaded) {
@@ -143,11 +151,17 @@ static int do_report_event(void __user *arg)
     }
     case EVENT_SERVICES: {
         if (services_started) {
-            pr_info("services already started, skipping\n");
+            pr_info("services already started, skipping (DIAG: caller=%d(%s) ppid=%d, claimed by %d(%s), last reset by %d(%s), late_load=%d)\n",
+                    task_tgid_nr(current), current->comm, task_ppid_nr(current),
+                    services_claim_pid, services_claim_comm, services_reset_pid, services_reset_comm,
+                    ksu_late_loaded);
             return 0;
         }
         services_started = true;
-        pr_info("services triggered\n");
+        services_claim_pid = task_tgid_nr(current);
+        strscpy(services_claim_comm, current->comm, sizeof(services_claim_comm));
+        pr_info("services triggered (DIAG: caller=%d(%s) ppid=%d)\n", services_claim_pid, services_claim_comm,
+                task_ppid_nr(current));
         return 1;
     }
     default:

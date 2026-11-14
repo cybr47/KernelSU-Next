@@ -225,7 +225,15 @@ pub fn grant_root() -> Result<()> {
 
 fn report_event(event: u32) {
     let mut cmd = ksu_uapi::ksu_report_event_cmd { event };
-    let _ = ksuctl(ksu_uapi::KSU_IOCTL_REPORT_EVENT, &raw mut cmd);
+    // DIAG: do not discard the result; the post-fs-data reset is what re-arms the service stage
+    match ksuctl_raw(ksu_uapi::KSU_IOCTL_REPORT_EVENT, &raw mut cmd) {
+        Ok(ret) => log::info!("report_event({event}): ret={ret} pid={}", std::process::id()),
+        Err(e) => log::warn!(
+            "report_event({event}) failed: {e} errno={:?} pid={}",
+            e.raw_os_error(),
+            std::process::id()
+        ),
+    }
 }
 
 pub fn report_post_fs_data() {
@@ -236,7 +244,14 @@ pub fn report_services() -> Result<bool> {
     let mut cmd = ksu_uapi::ksu_report_event_cmd {
         event: ksu_uapi::EVENT_SERVICES,
     };
-    Ok(ksuctl(ksu_uapi::KSU_IOCTL_REPORT_EVENT, &raw mut cmd)? == 1)
+    let ret = ksuctl(ksu_uapi::KSU_IOCTL_REPORT_EVENT, &raw mut cmd)?;
+    log::info!(
+        "report_services: ret={ret} pid={} kernel_uapi={} ksud_uapi={}",
+        std::process::id(),
+        get_info().uapi_version,
+        uapi_version()
+    );
+    Ok(ret == 1)
 }
 
 pub fn report_boot_complete() {

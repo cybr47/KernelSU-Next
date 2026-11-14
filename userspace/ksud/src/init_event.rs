@@ -154,7 +154,22 @@ pub fn run_stage(stage: &str, wait: ScriptWait) {
     }
 }
 
+/// DIAG: describe this process and its parent (who is launching the stage).
+pub fn caller_desc() -> String {
+    let ppid = unsafe { libc::getppid() };
+    let parent = std::fs::read(format!("/proc/{ppid}/cmdline"))
+        .map(|b| String::from_utf8_lossy(&b).replace('\0', " "))
+        .unwrap_or_else(|e| format!("<unreadable: {e}>"));
+    format!(
+        "pid={} ppid={ppid} parent_cmdline={:?} late_load={}",
+        std::process::id(),
+        parent.trim(),
+        ksucalls::is_late_load()
+    )
+}
+
 pub fn on_services() {
+    info!("on_services entered: {}", caller_desc());
     if let Err(e) = ksucalls::ensure_uapi_version_matched() {
         error!("{e:#}, skip on_services");
         return;
@@ -174,6 +189,7 @@ pub fn on_services() {
 
     info!("on_services triggered!");
     run_stage("service", ScriptWait::NoWait);
+    info!("on_services: service scripts launched by pid={}", std::process::id());
 }
 
 pub fn on_boot_completed() {
