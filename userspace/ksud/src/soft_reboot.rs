@@ -210,7 +210,12 @@ pub fn soft_reboot() -> Result<()> {
         warn!("start exited with status: {status}");
     }
     info!("services");
-    on_services();
+    if ksucalls::is_late_load() {
+        // Late-load owns the service stage because it does not register init's boot hooks.
+        run_stage("service", ScriptWait::NoWait);
+    } else {
+        on_services();
+    }
     if let Err(e) = wait_for_boot_completed() {
         warn!("wait for boot completed failed: {e}");
     }
