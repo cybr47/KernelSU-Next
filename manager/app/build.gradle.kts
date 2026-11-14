@@ -47,6 +47,8 @@ android {
     packaging {
         jniLibs {
             useLegacyPackaging = true
+            // Package the prebuilt ksud executable without changing its bytes.
+            keepDebugSymbols += "**/libksud.so"
         }
         resources {
             // https://stackoverflow.com/a/58956288
