@@ -240,17 +240,16 @@ fun FlashScreen(
         },
         floatingActionButton = {
             if (flashIt is FlashIt.FlashModules && (flashing == FlashingStatus.SUCCESS)) {
-                // Reboot button for modules flashing
                 ExtendedFloatingActionButton(
                     onClick = {
                         scope.launch {
                             withContext(Dispatchers.IO) {
-                                reboot()
+                                reboot("soft-reboot")
                             }
                         }
                     },
-                    icon = { Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.reboot)) },
-                    text = { Text(text = stringResource(R.string.reboot)) }
+                    icon = { Icon(Icons.Filled.Refresh, contentDescription = null) },
+                    text = { Text(text = stringResource(R.string.reboot_userspace)) }
                 )
             }
 
